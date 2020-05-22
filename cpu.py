@@ -1,7 +1,6 @@
 """CPU functionality."""
 
 import sys
-print('SYSTEM_ARGS:',sys.argv)
 
 class CPU:
     """Main CPU class."""
@@ -17,25 +16,7 @@ class CPU:
 
     def load(self):
         """Load a program into memory."""
-
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        # program = [
-        #     # From print8.ls8
-        #     0b10000010, # LDI R0,8
-        #     0b00000000,
-        #     0b00001000,
-        #     0b01000111, # PRN R0
-        #     0b00000000,
-        #     0b00000001, # HLT
-        # ]
-
-        # for instruction in program:
-        #     self.ram[address] = instruction
-        #     address += 1
-
         with open(sys.argv[1]) as f:
             for line in f:
                 string_val = line.split("#")[0].strip()
@@ -56,9 +37,9 @@ class CPU:
     def alu(self, op, opr_a, opr_b):
         """ALU operations."""
         # Flags
-        self.flag[5]  # Lesser
-        self.flag[6]  # Greater
-        self.flag[7]  # Equal
+        self.flag[1]  # Lesser
+        self.flag[2]  # Greater
+        self.flag[3]  # Equal
 
         if op == "ADD":
             self.reg[opr_a] += self.reg[opr_b]
@@ -68,22 +49,20 @@ class CPU:
         elif op == "CMP":
             # if opr_a less than opr_b
             if self.reg[opr_a] < self.reg[opr_b]:
-                self.flag[5] = 1
-                self.flag[6] = 0
-                self.flag[7] = 0
+                self.flag[1] = 1
+                self.flag[2] = 0
+                self.flag[3] = 0
             # if opr_a greater than opr_b
             elif self.reg[opr_a] > self.reg[opr_b]:
-                self.flag[5] = 0
-                self.flag[6] = 1
-                self.flag[7] = 0
+                self.flag[1] = 0
+                self.flag[2] = 1
+                self.flag[3] = 0
             # if both values are equal
             elif self.reg[opr_a] == self.reg[opr_b]:
-                self.flag[5] = 0
-                self.flag[6] = 0
-                self.flag[7] = 1    
+                self.flag[1] = 0
+                self.flag[2] = 0
+                self.flag[3] = 1    
             
-
-
         else:
             raise Exception("Unsupported ALU operation")
 
@@ -154,13 +133,6 @@ class CPU:
                 self.pc += 3
 
             elif instruction == PUSH:
-                # shorthand 
-                # self.sp -= 1
-                # MDR = self.reg[opr_a]
-                # self.ram_write(self.sp, MDR) 
-                # self.pc += 2
-
-                # a more detailed approach for clarity
                 # grab the values we are putting on the reg
                 val = self.reg[opr_a]
                 # Decrement the SP.
@@ -171,13 +143,6 @@ class CPU:
                 self.pc += 2
 
             elif instruction == POP:
-                # shorthand 
-                # MDR = self.ram_read(self.sp)
-                # self.reg[opr_a] = MDR
-                # self.sp += 1
-                # self.pc += 2   
-
-                # a more detailed approach for clarity
                 # grab values we are putting on the reg
                 val = self.ram[self.reg[self.sp]]
                 self.reg[opr_a] = val
@@ -185,7 +150,6 @@ class CPU:
                 self.pc += 2
 
             elif instruction == CALL:
-        
                 # address of IR pushed into stack
                 # pc is set to address stored in reg
                 val = self.pc + 2
@@ -196,18 +160,33 @@ class CPU:
                 self.pc = subroutine_addr
 
             elif instruction == RET:
-             
                 # return for subroutine/function
                 # Pop the value from the top of the stack and store it in pc
                 ret_addr = self.reg[self.sp]
                 self.pc = self.ram_read(ret_addr)
                 self.reg[self.sp] += 1
 
-            elif instructions == CMP:
+            elif instruction == CMP:
                 #This compares 2 values
                 self.alu("CMP", opr_a, opr_b)
                 self.pc += 3
 
+            elif instruction == JMP:
+                self.pc = self.reg[opr_a]
+
+            elif instruction == JEQ:
+                if self.flag[3] == 1:
+                    self.pc = self.reg[opr_a]
+                else:
+                    # print('values not equal')
+                    self.pc += 2
+
+            elif instruction == JNE:
+                if self.flag[3] == 0:
+                    self.pc = self.reg[opr_a]
+                else:
+                    # print('values are equal')        
+                    self.pc += 2
             else:
                 print(f'unknown instruction {instruction} at address {self.pc}')
                 sys.exit(1)         
